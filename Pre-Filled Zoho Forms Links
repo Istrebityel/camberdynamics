@@ -1,0 +1,2 @@
+link = "https://forms.zohopublic.com/berkelypayment/form/KYCClientOnboardingForm2019V1/formperma/jbZFNt6IIiMNdbyumlcV6W3DXNQCD36gOPrmm9Gv33I" + "?acctid=" + acctid;
+openUrl(link,"open window");
