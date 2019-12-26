@@ -1,0 +1,133 @@
+// COMMENTS
+// If you look at the screenshots, you'll see that the function executes perfectly within the function builder but breaks
+// when used within the live CRM. It always adds 8 hours to the scheduled date time, which matches with the CRM's 
+// time zone (PST -8:00 GMT). So I formatted the date time string to remove the time zone, but it still didn't work.
+// That's why you see "formatteddatetime" as a variable — it's a datetime string with the time zone information removed.
+formatteddatetime = appointmentdatetime.left(19);
+info formatteddatetime;
+// COMMENTS
+// Takes the day of week (number) and gives the corresponding day of the week.
+dayofweek = formatteddatetime.weekday();
+if(dayofweek = 1)
+{
+	day = "Sunday";
+}
+if(dayofweek = 2)
+{
+	day = "Monday";
+}
+if(dayofweek = 3)
+{
+	day = "Tuesday";
+}
+if(dayofweek = 4)
+{
+	day = "Wednesday";
+}
+if(dayofweek = 5)
+{
+	day = "Thursday";
+}
+if(dayofweek = 6)
+{
+	day = "Friday";
+}
+if(dayofweek = 7)
+{
+	day = "Saturday";
+}
+info day;
+// COMMENTS
+// Takes the month and gives the actual month in text.
+monthofappointment = formatteddatetime.month();
+if(monthofappointment = 1)
+{
+	month = "January";
+}
+if(monthofappointment = 2)
+{
+	month = "February";
+}
+if(monthofappointment = 3)
+{
+	month = "Marcy";
+}
+if(monthofappointment = 4)
+{
+	month = "April";
+}
+if(monthofappointment = 5)
+{
+	month = "May";
+}
+if(monthofappointment = 6)
+{
+	month = "June";
+}
+if(monthofappointment = 7)
+{
+	month = "July";
+}
+if(monthofappointment = 8)
+{
+	month = "August";
+}
+if(monthofappointment = 9)
+{
+	month = "September";
+}
+if(monthofappointment = 10)
+{
+	month = "October";
+}
+if(monthofappointment = 11)
+{
+	month = "November";
+}
+if(monthofappointment = 12)
+{
+	month = "December";
+}
+// COMMENTS
+// The minutes function wasn't working with the datetime format of "yyyy-mm-ddThh:mm:ss", so I removed the "T" 
+// in the middle and now it works.
+minutehourdatetime = formatteddatetime.replaceAll("T"," ");
+minute = minutehourdatetime.minute();
+if(minute = 0)
+{
+	minuteformatted = "00";
+}
+else
+{
+	minuteformatted = minute;
+}
+hour = minutehourdatetime.hour();
+daydate = formatteddatetime.day();
+year = formatteddatetime.getYear();
+info year;
+// COMMENTS
+// I broke it into 3 "IF" statements/
+// 1st Statement: Creates the string, adds "AM"
+// 2nd Statement: Creates the string, adds "PM", subtracts 12 from anything PM after 1 PM 
+// e.g. 13:00 = 13 - 12 PM, which turns into 1:00 PM
+// 3rd Statement: Creates the string, adds "PM", doesn't do subtraction because we want "12:00 PM" not "0:00 PM" 
+if(hour < 12)
+{
+	newappointment = day + ", " + month + " " + daydate + ", " + year + " at " + hour + ":" + minuteformatted + " AM";
+}
+if(hour > 12)
+{
+	hourformatted = hour - 12;
+	newappointment = day + ", " + month + " " + daydate + ", " + year + " at " + hourformatted + ":" + minuteformatted + " PM";
+}
+if(hour = 12)
+{
+	hourformatted = 12;
+	newappointment = day + ", " + month + " " + daydate + ", " + year + " at " + hourformatted + ":" + minuteformatted + " PM";
+}
+info newappointment;
+// COMMENTS
+// Updates string field with newly formatted date time. 
+mp = Map();
+mp.put("Appointment_Details_Reformatted",newappointment);
+zoho.crm.updateRecord("Leads",leadid,mp);
