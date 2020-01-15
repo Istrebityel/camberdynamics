@@ -1,0 +1,104 @@
+/* 
+ * Query all taxes from Zoho Books and create a list for tax groups 
+ */
+// Iteratively query taxes from Zoho Books
+taxIteratorList = {1,2,3};
+// Use of iterator list is to handle api results limiting and pagination. Add subsequent values to list to increase the amount of iterations.
+booksTaxes = List();
+for each index i in taxIteratorList
+{
+	taxApiRequest = invokeurl
+	[
+		url :"https://books.zoho.com/api/v3/settings/taxes?organization_id=699906202" + "&page=" + taxIteratorList.get(i) + "&per_page=200"
+		type :GET
+		connection:"books"
+	];
+	booksTaxes.addAll(taxApiRequest.get("taxes"));
+	// Push instance of query to total list
+}
+// Filter tax list for tax groups and add them to new list
+booksTaxGroups = List();
+for each  tax in booksTaxes
+{
+	if(tax.get("tax_type") == "tax_group")
+	{
+		booksTaxGroups.add(tax);
+	}
+}
+/* 
+ * Query all customers from Zoho Books and create a list of all customers 
+ */
+// Iteratively query customers from Zoho Books
+customerIteratorList = {9};
+// Use of iterator list is to handle api results limiting and pagination. Add subsequent values to list to increase the amount of iterations.
+booksCustomers = List();
+for each index i in customerIteratorList
+{
+	apiResults = invokeurl
+	[
+		url :"https://books.zoho.com/api/v3/contacts?organization_id=699906202&page=" + customerIteratorList.get(i) + "&per_page=200"
+		type :GET
+		connection:"books"
+	];
+	booksCustomers.addAll(apiResults.get("contacts"));
+}
+/* 
+ * Query Zoho Books API for each listed customer (original query does not include all required fields) and udpate their assigned tax group 
+ */
+// Iterate through Zoho Books Customers
+updateResults = list();
+for each  customer in booksCustomers
+{
+	customerUpdateResults = Map();
+	// Get full customer record from Zoho Books API
+	queryCustomer = invokeurl
+	[
+		url :"https://books.zoho.com/api/v3/contacts/" + customer.get("contact_id") + "?organization_id=699906202"
+		type :GET
+		connection:"books"
+	];
+	fullCustomer = queryCustomer.get("contact");
+	customerUpdateResults.put("contact_name",fullCustomer.get("contact_name"));
+	// Filter for customers with required fields
+	if(fullCustomer.containsKey("cf_tax_group_name"))
+	{
+		if(fullCustomer.get("cf_tax_group_name").toUpperCase() != "OUT OF STATE")
+		{
+			// Search through tax group list
+			matchFound = false;
+			for each  taxGroup in booksTaxGroups
+			{
+				// Search for tax group name match between customer and tax group list
+				if(taxGroup.get("tax_name").toUpperCase() == fullCustomer.get("cf_tax_group_name").toUpperCase())
+				{
+					matchFound = true;
+					// Create object to send to Zoho Books API
+					customerUpdateMap = {"JSONString":{"contact_name":fullCustomer.get("contact_name"),"is_taxable":"true","tax_id":taxGroup.get("tax_id")}};
+					// Udpate contact record with tax id and taxable status = true
+					updateContact = invokeurl
+					[
+						url :"https://books.zoho.com/api/v3/contacts/" + fullCustomer.get("contact_id") + "?organization_id=699906202"
+						type :PUT
+						parameters:customerUpdateMap
+						connection:"books"
+					];
+					customerUpdateResults.put("status",updateContact.get("message"));
+				}
+			}
+			if(!matchFound)
+			{
+				customerUpdateResults.put("status","No matching tax group found");
+			}
+		}
+		else
+		{
+			customerUpdateResults.put("status","Out of state");
+		}
+	}
+	else
+	{
+		customerUpdateResults.put("status","Tax Group Name field is null");
+	}
+	updateResults.add(customerUpdateResults);
+}
+info updateResults;
